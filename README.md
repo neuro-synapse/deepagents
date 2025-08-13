@@ -154,6 +154,29 @@ agent = create_deep_agent(
 
 The below components are built into `deepagents` and helps make it work for deep tasks off-the-shelf.
 
+### Event-Driven Mode (New!)
+
+`deepagents` now supports event-driven architecture for parallel processing and automatic coordination:
+
+```python
+agent = create_deep_agent(
+    tools=[your_tools],
+    instructions="Your instructions",
+    subagents=[your_subagents],
+    event_driven=True  # Enable event-driven mode!
+)
+```
+
+**Event-driven benefits:**
+- **Parallel Research**: Multiple research queries run simultaneously 
+- **Automatic Coordination**: Events trigger follow-up actions automatically
+- **Responsive**: React to intermediate findings immediately  
+- **Scalable**: Better performance for complex research workflows
+
+See [EVENT_DRIVEN_README.md](EVENT_DRIVEN_README.md) for complete documentation.
+
+Event-driven mode is completely optional - existing agents work unchanged.
+
 ### System Prompt
 
 `deepagents` comes with a [built-in system prompt](src/deepagents/prompts.py). This is relatively detailed prompt that is heavily based on and inspired by [attempts](https://github.com/kn1026/cc/blob/main/claudecode.md) to [replicate](https://github.com/asgeirtj/system_prompts_leaks/blob/main/Anthropic/claude-code.md)
