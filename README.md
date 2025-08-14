@@ -66,7 +66,7 @@ agent = create_deep_agent(
 result = agent.invoke({"messages": [{"role": "user", "content": "what is langgraph?"}]})
 ```
 
-See [examples/research/research_agent.py](examples/research/research_agent.py) for a more complex example.
+See [examples/research/research_agent.py](examples/research/research_agent.py) and [examples/chaos/chaos_agent.py](examples/chaos/chaos_agent.py) for more complex examples.
 
 The agent created with `create_deep_agent` is just a LangGraph graph - so you can interact with it (streaming, human-in-the-loop, memory, studio)
 in the same way you would any LangGraph agent.
