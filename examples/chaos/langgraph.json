@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "chaos": "./chaos_agent.py:agent"
+  },
+  "env": ".env"
+}
