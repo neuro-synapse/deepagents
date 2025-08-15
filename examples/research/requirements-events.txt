@@ -1,0 +1,4 @@
+# Optional event backends for examples/research/event_worker.py
+boto3~=1.34  # SQS
+kafka-python~=2.0  # Kafka
+# IMAP uses Python stdlib (imaplib), no extra dependency

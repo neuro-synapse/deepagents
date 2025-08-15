@@ -198,43 +198,61 @@ result["files"]
 It has access to a `general-purpose` subagent at all times - this is a subagent with the same instructions as the main agent and all the tools that is has access to.
 You can also specify [custom sub agents](#subagents-optional) with their own instructions and tools.
 
-Sub agents are useful for ["context quarantine"](https://www.dbreunig.com/2025/06/26/how-to-fix-your-context.html#context-quarantine) (to help not pollute the overall context of the main agent)
-as well as custom instructions.
 
-## MCP
+## Event-driven usage (simple and minimal)
 
-The `deepagents` library can be ran with MCP tools. This can be achieved by using the [Langchain MCP Adapter library](https://github.com/langchain-ai/langchain-mcp-adapters).
+A small worker is provided to trigger the research agent on events from SQS, Kafka, or Email (IMAP). Pick one and set the corresponding env vars.
 
-(To run the example below, will need to `pip install langchain-mcp-adapters`)
+- File: `examples/research/event_worker.py`
+- Optional deps: `examples/research/requirements-events.txt`
 
-```python
-import asyncio
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from deepagents import create_deep_agent
+### 1) SQS
 
-async def main():
-    # Collect MCP tools
-    mcp_client = MultiServerMCPClient(...)
-    mcp_tools = await mcp_client.get_tools()
-
-    # Create agent
-    agent = create_deep_agent(tools=mcp_tools, ....)
-
-    # Stream the agent
-    async for chunk in agent.astream(
-        {"messages": [{"role": "user", "content": "what is langgraph?"}]},
-        stream_mode="values"
-    ):
-        if "messages" in chunk:
-            chunk["messages"][-1].pretty_print()
-
-asyncio.run(main())
+```bash
+pip install -r examples/research/requirements.txt
+pip install -r examples/research/requirements-events.txt
+export ANTHROPIC_API_KEY=...   # for default model
+export TAVILY_API_KEY=...      # for internet_search tool
+export SQS_QUEUE_URL=https://sqs.<region>.amazonaws.com/<acct>/<queue>
+python examples/research/event_worker.py
 ```
 
-## Roadmap
-- [ ] Allow users to customize full system prompt
-- [ ] Code cleanliness (type hinting, docstrings, formating)
-- [ ] Allow for more of a robust virtual filesystem
-- [ ] Create an example of a deep coding agent built on top of this
-- [ ] Benchmark the example of [deep research agent](examples/research/research_agent.py)
-- [ ] Add human-in-the-loop support for tools
+Message format: either a plain string body or JSON like `{ "text": "research prompt" }`.
+
+### 2) Kafka
+
+```bash
+pip install -r examples/research/requirements.txt
+pip install -r examples/research/requirements-events.txt
+export ANTHROPIC_API_KEY=...
+export TAVILY_API_KEY=...
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+export KAFKA_TOPIC=research
+python examples/research/event_worker.py
+```
+
+### 3) Email (IMAP poll)
+
+```bash
+pip install -r examples/research/requirements.txt
+export ANTHROPIC_API_KEY=...
+export TAVILY_API_KEY=...
+export IMAP_HOST=imap.example.com
+export IMAP_USERNAME=you@example.com
+export IMAP_PASSWORD=...  # app password recommended
+python examples/research/event_worker.py
+```
+
+### Output
+
+The agent writes its final report to the in-memory mock filesystem key `final_report.md`. The worker logs whether that file was produced; you can also inspect `result["files"]` if you embed this code.
+
+### Notes and pitfalls (keep it simple)
+
+- Use long-polling (SQS `WaitTimeSeconds=20`) to reduce costs and CPU.
+- We only delete SQS messages and commit Kafka offsets on success. Failures are retried by the broker naturally.
+- Email polling is best-effort and simple; consider dedicated IDs/labels for production.
+- Keep messages small enough for your model context; large prompts can be slow/expensive.
+- Ensure `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` are set; missing keys will cause model/tool failures.
+- Backpressure: run multiple worker processes if needed; they are stateless.
+- No shared filesystem is used; the agent uses an in-memory mock FS, which avoids cross-worker interference.
